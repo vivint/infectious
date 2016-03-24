@@ -46,6 +46,14 @@ func NewFecCode(k, n int) (*FecCode, error) {
 	}, nil
 }
 
+func (f *FecCode) Required() int {
+	return f.k
+}
+
+func (f *FecCode) Total() int {
+	return f.n
+}
+
 type Callback func(i int, n int, data []byte)
 
 func (f *FecCode) Encode(input []byte, output Callback) error {
