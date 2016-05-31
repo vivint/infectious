@@ -5,7 +5,7 @@ package infectuous
 import (
 	"github.com/spacemonkeygo/errors"
 	"github.com/spacemonkeygo/spacelog"
-	"gopkg.in/spacemonkeygo/monitor.v2"
+	monitor "gopkg.in/spacemonkeygo/monkit.v2"
 )
 
 var (
