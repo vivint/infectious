@@ -9,6 +9,9 @@ func addmul(z []byte, x []byte, y byte) {
 		return
 	}
 
+	// hint to the compiler that we don't need bounds checks on x
+	x = x[:len(z)]
+
 	// TODO(jeff): loop unrolling for SPEEDS
 	gf_mul_y := gf_mul_table[y][:]
 	for i := range z {

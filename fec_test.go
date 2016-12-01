@@ -54,3 +54,27 @@ func TestBasicOperation(t *testing.T) {
 		t.Fatalf("did not match")
 	}
 }
+
+func BenchmarkEncode(b *testing.B) {
+	const block = 1024 * 1024
+	const total, required = 40, 20
+
+	code, err := NewFecCode(required, total)
+	if err != nil {
+		b.Fatalf("failed to create new fec code: %s", err)
+	}
+
+	// seed the initial data
+	data := make([]byte, required*block)
+	for i := range data {
+		data[i] = byte(i)
+	}
+	store := func(idx, total int, data []byte) {}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		code.Encode(data, store)
+	}
+}
