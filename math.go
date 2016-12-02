@@ -4,21 +4,6 @@ package infectuous
 
 import "bytes"
 
-func addmul(z []byte, x []byte, y byte) {
-	if y == 0 {
-		return
-	}
-
-	// hint to the compiler that we don't need bounds checks on x
-	x = x[:len(z)]
-
-	// TODO(jeff): loop unrolling for SPEEDS
-	gf_mul_y := gf_mul_table[y][:]
-	for i := range z {
-		z[i] ^= gf_mul_y[x[i]]
-	}
-}
-
 type pivotSearcher struct {
 	k    int
 	ipiv []bool
