@@ -19,17 +19,19 @@ func addmulSlow(z []byte, x []byte, y byte) {
 
 func TestAddmul(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		size := rand.Intn(1024)
+		align := rand.Intn(256)
+		size := rand.Intn(1024) + align
 		y := byte(rand.Intn(256))
 		x := smtest.RandomBytes(size)
 		z := smtest.RandomBytes(size)
 		z1 := append([]byte(nil), z...)
 		z2 := append([]byte(nil), z...)
 
-		addmulSlow(z1, x, y)
-		addmul(z2, x, y)
+		addmulSlow(z1[align:], x[align:], y)
+		addmul(z2[align:], x[align:], y)
 
 		if !bytes.Equal(z1, z2) {
+			t.Logf("align: %d", align)
 			t.Logf("size: %d", size)
 			t.Logf("x: %x", x)
 			t.Logf("z: %x", z)

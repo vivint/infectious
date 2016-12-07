@@ -5,12 +5,12 @@ package infectuous
 import (
 	"github.com/spacemonkeygo/errors"
 	"github.com/spacemonkeygo/spacelog"
-	monitor "gopkg.in/spacemonkeygo/monkit.v2"
+	"gopkg.in/spacemonkeygo/monkit.v2"
 )
 
 var (
 	logger = spacelog.GetLogger()
-	mon    = monitor.Package()
+	mon    = monkit.Package()
 
 	Error = errors.NewClass("infectuous")
 )

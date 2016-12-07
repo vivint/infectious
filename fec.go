@@ -11,7 +11,7 @@ type FecCode struct {
 }
 
 func NewFecCode(k, n int) (*FecCode, error) {
-	if k == 0 || n == 0 || k > 256 || n > 256 || k > n {
+	if k <= 0 || n <= 0 || k > 256 || n > 256 || k > n {
 		return nil, Error.New("requires 1 <= k <= n <= 256")
 	}
 
