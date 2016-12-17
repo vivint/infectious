@@ -5,9 +5,10 @@ package infectuous
 import "sort"
 
 type FecCode struct {
-	k          int
-	n          int
-	enc_matrix []byte
+	k           int
+	n           int
+	enc_matrix  []byte
+	vand_matrix []byte
 }
 
 func NewFecCode(k, n int) (*FecCode, error) {
@@ -39,10 +40,25 @@ func NewFecCode(k, n int) (*FecCode, error) {
 		}
 	}
 
+	// vand_matrix has more columns than rows
+	// k rows, n columns.
+	vand_matrix := make([]byte, k*n)
+	vand_matrix[0] = 1
+	g := byte(1)
+	for row := 0; row < k; row++ {
+		a := byte(1)
+		for col := 1; col < n; col++ {
+			vand_matrix[row*n+col] = a // 2.pow(i * j) FIGURE IT OUT
+			a = gf_mul_table[g][a]
+		}
+		g = gf_mul_table[2][g]
+	}
+
 	return &FecCode{
-		k:          k,
-		n:          n,
-		enc_matrix: enc_matrix,
+		k:           k,
+		n:           n,
+		enc_matrix:  enc_matrix,
+		vand_matrix: vand_matrix,
 	}, nil
 }
 
@@ -140,7 +156,9 @@ func (f *FecCode) Decode(shares []Share, output Callback) error {
 
 		if share_id < k {
 			m_dec[i*(k+1)] = 1
-			output(share_id, k, share_data)
+			if output != nil {
+				output(share_id, k, share_data)
+			}
 		} else {
 			copy(m_dec[i*k:i*k+k], enc_matrix[share_id*k:])
 		}
@@ -164,7 +182,9 @@ func (f *FecCode) Decode(shares []Share, output Callback) error {
 				addmul(buf, sharesv[col], m_dec[i*k+col])
 			}
 
-			output(i, k, buf)
+			if output != nil {
+				output(i, k, buf)
+			}
 		}
 	}
 	return nil

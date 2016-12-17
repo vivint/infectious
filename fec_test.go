@@ -71,10 +71,46 @@ func BenchmarkEncode(b *testing.B) {
 	}
 	store := func(idx, total int, data []byte) {}
 
+	b.SetBytes(block * required)
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		code.Encode(data, store)
+	}
+}
+
+func BenchmarkDecode(b *testing.B) {
+	const block = 4096
+	const total, required = 40, 20
+
+	code, err := NewFecCode(required, total)
+	if err != nil {
+		b.Fatalf("failed to create new fec code: %s", err)
+	}
+
+	// seed the initial data
+	data := make([]byte, required*block)
+	for i := range data {
+		data[i] = byte(i)
+	}
+	shares := make([]Share, total)
+	store := func(idx, total int, data []byte) {
+		shares[idx].Number = idx
+		shares[idx].Data = append(shares[idx].Data, data...)
+	}
+	err = code.Encode(data, store)
+	if err != nil {
+		b.Fatalf("failed to encode: %s", err)
+	}
+
+	dec_shares := shares[total-required:]
+
+	b.SetBytes(block * required)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		code.Decode(dec_shares, nil)
 	}
 }
