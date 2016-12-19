@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package infectuous
+package infectious
 
 import (
 	"github.com/spacemonkeygo/errors"
@@ -32,5 +32,5 @@ var (
 	logger = spacelog.GetLogger()
 	mon    = monkit.Package()
 
-	Error = errors.NewClass("infectuous")
+	Error = errors.NewClass("infectious")
 )

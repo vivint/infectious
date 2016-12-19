@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package infectuous
+package infectious
 
 func cpuidex(op, op2 uint32) (eax, ebx, ecx, edx uint32)
 func xgetbv(index uint32) (eax, edx uint32)

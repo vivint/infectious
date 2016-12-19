@@ -22,7 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package infectuous
+package infectious
 
 //go:noescape
 func addmulSSE3(low, high, in, out []byte)

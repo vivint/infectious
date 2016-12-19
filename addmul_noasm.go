@@ -22,7 +22,7 @@
 
 // +build !amd64
 
-package infectuous
+package infectious
 
 func addmul(z []byte, x []byte, y byte) {
 	if y == 0 {
