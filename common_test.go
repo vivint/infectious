@@ -22,8 +22,45 @@
 
 package infectious
 
-import "github.com/spacemonkeygo/errors"
-
-var (
-	Error = errors.NewClass("infectious")
+import (
+	crand "crypto/rand"
+	"fmt"
+	"math/rand"
+	"reflect"
+	"testing"
+	"time"
 )
+
+func RandomBytes(size int) []byte {
+	buf := make([]byte, size)
+	_, err := crand.Read(buf)
+	if err != nil {
+		panic(fmt.Sprintf("rand.Read failed: %s", err))
+	}
+	return buf
+}
+
+// we want all of our test runs to be with a different seed
+func init() { rand.Seed(int64(time.Now().UnixNano())) }
+
+type Asserter struct {
+	tb testing.TB
+}
+
+func Wrap(tb testing.TB) *Asserter {
+	return &Asserter{
+		tb: tb,
+	}
+}
+
+func (a *Asserter) AssertNoError(err error) {
+	if err != nil {
+		a.tb.Fatalf("expected no error; got %v", err)
+	}
+}
+
+func (a *Asserter) AssertDeepEqual(x, y interface{}) {
+	if !reflect.DeepEqual(x, y) {
+		a.tb.Fatalf("expected\n%#v\n%#v\nto be equal", x, y)
+	}
+}

@@ -31,7 +31,10 @@ func (fc *FecCode) BerlekampWelch(shares []Share, output Callback) error {
 
 	// fast path: check to see if there are no errors by evaluating it with
 	// the syndrome matrix.
-	synd := fc.syndromeMatrix(shares)
+	synd, err := fc.syndromeMatrix(shares)
+	if err != nil {
+		return err
+	}
 	buf := make([]byte, len(shares[0].Data))
 
 	for i := 0; i < synd.r; i++ {
@@ -111,7 +114,10 @@ func (fc *FecCode) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	}
 
 	// invert and put the result in a
-	s.invertWith(a)
+	err := s.invertWith(a)
+	if err != nil {
+		return nil, err
+	}
 
 	// multiply the inverted matrix by the column vector
 	for i := 0; i < dim; i++ {
@@ -127,6 +133,7 @@ func (fc *FecCode) berlekampWelch(shares []Share, index int) ([]byte, error) {
 
 	q_poly := gfPoly(u[e:])
 	e_poly := append(gfPoly{gfConst(1)}, u[:e]...)
+
 	p_poly, rem, err := q_poly.div(e_poly)
 	if err != nil {
 		return nil, err
@@ -148,7 +155,7 @@ func (fc *FecCode) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	return out, nil
 }
 
-func (fc *FecCode) syndromeMatrix(shares []Share) gfMat {
+func (fc *FecCode) syndromeMatrix(shares []Share) (gfMat, error) {
 	// get a list of keepers
 	keepers := map[int]struct{}{}
 	for _, share := range shares {
@@ -171,7 +178,10 @@ func (fc *FecCode) syndromeMatrix(shares []Share) gfMat {
 	}
 
 	// standardize the output and convert into parity form
-	out.standardize()
+	err := out.standardize()
+	if err != nil {
+		return gfMat{}, err
+	}
 
-	return out.parity()
+	return out.parity(), nil
 }

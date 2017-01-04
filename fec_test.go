@@ -24,9 +24,8 @@ package infectious
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
-
-	"sm/space/rand"
 )
 
 func TestBasicOperation(t *testing.T) {

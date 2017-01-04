@@ -24,10 +24,8 @@ package infectious
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
-
-	"sm/smtest"
-	"sm/space/rand"
 )
 
 func addmulSlow(z []byte, x []byte, y byte) {
@@ -42,8 +40,8 @@ func TestAddmul(t *testing.T) {
 		align := rand.Intn(256)
 		size := rand.Intn(1024) + align
 		y := byte(rand.Intn(256))
-		x := smtest.RandomBytes(size)
-		z := smtest.RandomBytes(size)
+		x := RandomBytes(size)
+		z := RandomBytes(size)
 		z1 := append([]byte(nil), z...)
 		z2 := append([]byte(nil), z...)
 

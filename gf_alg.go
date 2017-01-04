@@ -24,6 +24,7 @@ package infectious
 
 import (
 	"fmt"
+	"strings"
 	"unsafe"
 
 	"github.com/spacemonkeygo/errors"
@@ -52,11 +53,14 @@ func (a gfVal) mul(b gfVal) gfVal {
 	return gfVal(gf_mul_table[a][b])
 }
 
-func (a gfVal) div(b gfVal) gfVal {
+func (a gfVal) div(b gfVal) (gfVal, error) {
 	if b == 0 {
-		panic("divide by zero")
+		return 0, errors.ProgrammerError.New("divide by zero")
 	}
-	return gfVal(gf_exp[gf_log[a]-gf_log[b]])
+	if a == 0 {
+		return 0, nil
+	}
+	return gfVal(gf_exp[gf_log[a]-gf_log[b]]), nil
 }
 
 func (a gfVal) add(b gfVal) gfVal {
@@ -67,11 +71,11 @@ func (a gfVal) isZero() bool {
 	return a == 0
 }
 
-func (a gfVal) inv() gfVal {
+func (a gfVal) inv() (gfVal, error) {
 	if a == 0 {
-		panic("invert zero")
+		return 0, errors.ProgrammerError.New("invert zero")
 	}
-	return gfVal(gf_exp[255-gf_log[a]])
+	return gfVal(gf_exp[255-gf_log[a]]), nil
 }
 
 //
@@ -182,15 +186,40 @@ func (p gfPoly) div(b gfPoly) (q, r gfPoly, err error) {
 		return polyZero(1), polyZero(1), nil
 	}
 
+	const debug = false
+	indent := 2*len(b) + 1
+
+	if debug {
+		fmt.Printf("%02x %02x\n", b, p)
+	}
+
 	for b.deg() <= p.deg() {
 		leading_p := p.index(p.deg())
 		leading_b := b.index(b.deg())
-		coef := leading_p.div(leading_b)
+
+		if debug {
+			fmt.Printf("leading_p: %02x leading_b: %02x\n",
+				leading_p, leading_b)
+		}
+
+		coef, err := leading_p.div(leading_b)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if debug {
+			fmt.Printf("coef: %02x\n", coef)
+		}
 
 		q = append(q, coef)
 
 		scaled := b.scale(coef)
 		padded := append(scaled, polyZero(p.deg()-scaled.deg())...)
+
+		if debug {
+			fmt.Printf("%s%02x\n", strings.Repeat(" ", indent), padded)
+			indent += 2
+		}
 
 		p = p.add(padded)
 		if !p[0].isZero() {
@@ -285,7 +314,7 @@ func (m gfMat) addmulRow(i, j int, val gfVal) {
 
 // in place invert. the output is put into a and m is turned into the identity
 // matrix. a is expected to be the identity matrix.
-func (m gfMat) invertWith(a gfMat) {
+func (m gfMat) invertWith(a gfMat) error {
 	for i := 0; i < m.r; i++ {
 		p_row, p_val := i, m.get(i, i)
 		for j := i + 1; j < m.r && p_val.isZero(); j++ {
@@ -300,7 +329,10 @@ func (m gfMat) invertWith(a gfMat) {
 			a.swapRow(i, p_row)
 		}
 
-		inv := p_val.inv()
+		inv, err := p_val.inv()
+		if err != nil {
+			return err
+		}
 		m.scaleRow(i, inv)
 		a.scaleRow(i, inv)
 
@@ -318,10 +350,12 @@ func (m gfMat) invertWith(a gfMat) {
 			a.addmulRow(i, j, trailing)
 		}
 	}
+
+	return nil
 }
 
 // in place standardize.
-func (m gfMat) standardize() {
+func (m gfMat) standardize() error {
 	for i := 0; i < m.r; i++ {
 		p_row, p_val := i, m.get(i, i)
 		for j := i + 1; j < m.r && p_val.isZero(); j++ {
@@ -335,7 +369,10 @@ func (m gfMat) standardize() {
 			m.swapRow(i, p_row)
 		}
 
-		inv := p_val.inv()
+		inv, err := p_val.inv()
+		if err != nil {
+			return err
+		}
 		m.scaleRow(i, inv)
 
 		for j := i + 1; j < m.r; j++ {
@@ -350,6 +387,8 @@ func (m gfMat) standardize() {
 			m.addmulRow(i, j, trailing)
 		}
 	}
+
+	return nil
 }
 
 // parity returns the new matrix because it changes dimensions and stuff. it

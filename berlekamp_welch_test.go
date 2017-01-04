@@ -23,10 +23,9 @@
 package infectious
 
 import (
+	"bytes"
+	"math/rand"
 	"testing"
-
-	"sm/smtest"
-	"sm/space/rand"
 )
 
 func TestBerlekampWelchSingle(t *testing.T) {
@@ -56,6 +55,22 @@ func TestBerlekampWelch(t *testing.T) {
 	decoded_shares, callback := test.StoreShares()
 	test.AssertNoError(test.code.BerlekampWelch(shares, callback))
 	test.AssertDeepEqual(decoded_shares[:required], shares[:required])
+}
+
+func TestBerlekampWelchZero(t *testing.T) {
+	const total, required = 40, 20
+
+	test := NewBerlekampWelchTest(t, required, total)
+
+	buf := make([]byte, 200)
+	buf = append(buf, bytes.Repeat([]byte{0x14}, 20)...)
+
+	shares, callback := test.StoreShares()
+	test.AssertNoError(test.code.Encode(buf, callback))
+
+	shares[0].Data[0]++
+
+	test.AssertNoError(test.code.BerlekampWelch(shares, nil))
 }
 
 func TestBerlekampWelchErrors(t *testing.T) {
@@ -157,7 +172,7 @@ func BenchmarkBerlekampWelchTwoErrors(b *testing.B) {
 ///////////////////////////////////////////////////////////////////////////////
 
 type BerlekampWelchTest struct {
-	*smtest.SmT
+	*Asserter
 
 	code *FecCode
 }
@@ -165,13 +180,13 @@ type BerlekampWelchTest struct {
 func NewBerlekampWelchTest(t testing.TB,
 	required, total int) *BerlekampWelchTest {
 
-	smt := smtest.Wrap(t)
+	asserter := Wrap(t)
 
 	code, err := NewFecCode(required, total)
-	smt.AssertNoError(err)
+	asserter.AssertNoError(err)
 
 	return &BerlekampWelchTest{
-		SmT: smt,
+		Asserter: asserter,
 
 		code: code,
 	}
