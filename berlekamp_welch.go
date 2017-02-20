@@ -22,12 +22,18 @@
 
 package infectious
 
-import "github.com/spacemonkeygo/errors"
+import (
+	"sort"
+
+	"github.com/spacemonkeygo/errors"
+)
 
 func (fc *FecCode) BerlekampWelch(shares []Share, output Callback) error {
 	if len(shares) == 0 {
 		return errors.ProgrammerError.New("must specify at least one share")
 	}
+
+	sort.Sort(byNumber(shares))
 
 	// fast path: check to see if there are no errors by evaluating it with
 	// the syndrome matrix.
