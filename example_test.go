@@ -20,47 +20,57 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package infectious
+package infectious_test
 
 import (
-	crand "crypto/rand"
 	"fmt"
-	"math/rand"
-	"reflect"
 	"testing"
-	"time"
+
+	"github.com/vivintinc/infectious"
 )
 
-func RandomBytes(size int) []byte {
-	buf := make([]byte, size)
-	_, err := crand.Read(buf)
+func Example(t *testing.T) {
+	const (
+		required = 8
+		total    = 14
+	)
+
+	// Create a *FEC, which will require required pieces for reconstruction at
+	// minimum, and generate total total pieces.
+	f, err := infectious.NewFEC(required, total)
 	if err != nil {
-		panic(fmt.Sprintf("rand.Read failed: %s", err))
+		panic(err)
 	}
-	return buf
-}
 
-// we want all of our test runs to be with a different seed
-func init() { rand.Seed(int64(time.Now().UnixNano())) }
-
-type Asserter struct {
-	tb testing.TB
-}
-
-func Wrap(tb testing.TB) *Asserter {
-	return &Asserter{
-		tb: tb,
+	// Prepare to receive the shares of encoded data.
+	shares := make([]infectious.Share, total)
+	output := func(s infectious.Share) {
+		shares[s.Number].Number = s.Number
+		// we need to make a copy of s.Data!
+		shares[s.Number].Data = append([]byte(nil), s.Data...)
 	}
-}
 
-func (a *Asserter) AssertNoError(err error) {
+	// the data to encode must be padded to a multiple of required, hence the
+	// underscores.
+	err = f.Encode([]byte("hello, world! __"), output)
 	if err != nil {
-		a.tb.Fatalf("expected no error; got %v", err)
+		panic(err)
 	}
-}
 
-func (a *Asserter) AssertDeepEqual(x, y interface{}) {
-	if !reflect.DeepEqual(x, y) {
-		a.tb.Fatalf("expected\n%#v\n%#v\nto be equal", x, y)
+	// we now have total shares.
+	for _, share := range shares {
+		fmt.Printf("%d: %#v\n", share.Number, string(share.Data))
 	}
+
+	// Let's reconstitute with two pieces missing and one piece corrupted.
+	shares = shares[2:]     // drop the first two pieces
+	shares[2].Data[1] = '!' // mutate some data
+
+	result, err := f.Decode(nil, shares)
+	if err != nil {
+		panic(err)
+	}
+
+	// we have the original data!
+	fmt.Printf("got: %#v\n", string(result))
 }

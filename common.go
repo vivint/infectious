@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (C) 2016 Space Monkey, Inc.
+// Copyright (C) 2016-2017 Vivint, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,10 +20,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Package infectious implements Reed-Solomon forward error correction [1]. It
+// uses the Berlekamp-Welch [2] error correction algorithm to achieve the
+// ability to actually correct errors.
+//
+// Caution: this package API leans toward providing the user more power and
+// performance at the expense of having some really sharp edges! Read the
+// documentation about memory lifecycles carefully!
+//
+//   [1] https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction
+//   [2] https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm
 package infectious
 
 import "github.com/spacemonkeygo/errors"
 
-var (
-	Error = errors.NewClass("infectious")
-)
+var Error = errors.NewClass("infectious")

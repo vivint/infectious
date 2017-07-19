@@ -1,7 +1,7 @@
 // (C) 1996-1998 Luigi Rizzo (luigi@iet.unipi.it)
 //     2009-2010 Jack Lloyd (lloyd@randombit.net)
 //     2011 Billy Brumley (billy.brumley@aalto.fi)
-//     2016 Space Monkey (hello@spacemonkey.com)
+//     2016-2017 Vivint, Inc. (jeff.wendling@vivint.com)
 //
 // Portions derived from code by Phil Karn (karn@ka9q.ampr.org),
 // Robert Morelos-Zaragoza (robert@spectra.eng.hawaii.edu) and Hari

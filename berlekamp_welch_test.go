@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (C) 2016 Space Monkey, Inc.
+// Copyright (C) 2016-2017 Vivint, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ func TestBerlekampWelchSingle(t *testing.T) {
 	const total, required = 7, 3
 
 	test := NewBerlekampWelchTest(t, required, total)
-	shares := test.SomeShares(block)
+	_, shares := test.SomeShares(block)
 
 	out, err := test.code.berlekampWelch(shares, 0)
 	test.AssertNoError(err)
@@ -45,16 +45,32 @@ func TestBerlekampWelch(t *testing.T) {
 	const total, required = 7, 3
 
 	test := NewBerlekampWelchTest(t, required, total)
-	shares := test.SomeShares(block)
+	_, shares := test.SomeShares(block)
 
-	test.AssertNoError(test.code.BerlekampWelch(shares, nil))
+	test.AssertNoError(test.code.decode(shares, nil))
 
 	shares[0].Data[0]++
 	shares[1].Data[0]++
 
 	decoded_shares, callback := test.StoreShares()
-	test.AssertNoError(test.code.BerlekampWelch(shares, callback))
+	test.AssertNoError(test.code.decode(shares, callback))
 	test.AssertDeepEqual(decoded_shares[:required], shares[:required])
+}
+
+func TestDecode(t *testing.T) {
+	const block = 4096
+	const total, required = 7, 3
+
+	test := NewBerlekampWelchTest(t, required, total)
+	origdata, shares := test.SomeShares(block)
+
+	combined, err := test.code.Decode(nil, shares)
+	test.AssertNoError(err)
+	test.AssertDeepEqual(combined, origdata)
+
+	combined, err = test.code.Decode(make([]byte, len(origdata)+1), shares)
+	test.AssertNoError(err)
+	test.AssertDeepEqual(combined, origdata)
 }
 
 func TestBerlekampWelchZero(t *testing.T) {
@@ -70,7 +86,7 @@ func TestBerlekampWelchZero(t *testing.T) {
 
 	shares[0].Data[0]++
 
-	test.AssertNoError(test.code.BerlekampWelch(shares, nil))
+	test.AssertNoError(test.code.decode(shares, nil))
 }
 
 func TestBerlekampWelchErrors(t *testing.T) {
@@ -78,8 +94,8 @@ func TestBerlekampWelchErrors(t *testing.T) {
 	const total, required = 7, 3
 
 	test := NewBerlekampWelchTest(t, required, total)
-	shares := test.SomeShares(block)
-	test.AssertNoError(test.code.BerlekampWelch(shares, nil))
+	_, shares := test.SomeShares(block)
+	test.AssertNoError(test.code.decode(shares, nil))
 
 	for i := 0; i < 500; i++ {
 		shares_copy := test.CopyShares(shares)
@@ -89,7 +105,7 @@ func TestBerlekampWelchErrors(t *testing.T) {
 		}
 
 		decoded_shares, callback := test.StoreShares()
-		test.AssertNoError(test.code.BerlekampWelch(shares, callback))
+		test.AssertNoError(test.code.decode(shares, callback))
 		test.AssertDeepEqual(decoded_shares[:required], shares[:required])
 	}
 }
@@ -99,8 +115,8 @@ func TestBerlekampWelchRandomShares(t *testing.T) {
 	const total, required = 7, 3
 
 	test := NewBerlekampWelchTest(t, required, total)
-	shares := test.SomeShares(block)
-	test.AssertNoError(test.code.BerlekampWelch(shares, nil))
+	_, shares := test.SomeShares(block)
+	test.AssertNoError(test.code.decode(shares, nil))
 
 	for i := 0; i < 500; i++ {
 		test_shares := test.CopyShares(shares)
@@ -112,7 +128,7 @@ func TestBerlekampWelchRandomShares(t *testing.T) {
 		}
 
 		decoded_shares, callback := test.StoreShares()
-		test.AssertNoError(test.code.BerlekampWelch(test_shares, callback))
+		test.AssertNoError(test.code.decode(test_shares, callback))
 		test.AssertDeepEqual(decoded_shares[:required], shares[:required])
 	}
 }
@@ -122,14 +138,14 @@ func BenchmarkBerlekampWelch(b *testing.B) {
 	const total, required = 40, 20
 
 	test := NewBerlekampWelchTest(b, required, total)
-	shares := test.SomeShares(block)
+	_, shares := test.SomeShares(block)
 
 	b.ReportAllocs()
 	b.SetBytes(required * block)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		test.AssertNoError(test.code.BerlekampWelch(shares, nil))
+		test.AssertNoError(test.code.decode(shares, nil))
 	}
 }
 
@@ -138,7 +154,7 @@ func BenchmarkBerlekampWelchOneError(b *testing.B) {
 	const total, required = 40, 20
 
 	test := NewBerlekampWelchTest(b, required, total)
-	shares := test.SomeShares(block)
+	_, shares := test.SomeShares(block)
 	dec_shares := shares[total-required-2:]
 
 	b.ReportAllocs()
@@ -146,7 +162,7 @@ func BenchmarkBerlekampWelchOneError(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		test.AssertNoError(test.code.BerlekampWelch(dec_shares, nil))
+		test.AssertNoError(test.code.decode(dec_shares, nil))
 	}
 }
 
@@ -155,7 +171,7 @@ func BenchmarkBerlekampWelchTwoErrors(b *testing.B) {
 	const total, required = 40, 20
 
 	test := NewBerlekampWelchTest(b, required, total)
-	shares := test.SomeShares(block)
+	_, shares := test.SomeShares(block)
 	dec_shares := shares[total-required-4:]
 
 	b.ReportAllocs()
@@ -163,7 +179,7 @@ func BenchmarkBerlekampWelchTwoErrors(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		test.AssertNoError(test.code.BerlekampWelch(dec_shares, nil))
+		test.AssertNoError(test.code.decode(dec_shares, nil))
 	}
 }
 
@@ -174,7 +190,7 @@ func BenchmarkBerlekampWelchTwoErrors(b *testing.B) {
 type BerlekampWelchTest struct {
 	*Asserter
 
-	code *FecCode
+	code *FEC
 }
 
 func NewBerlekampWelchTest(t testing.TB,
@@ -182,7 +198,7 @@ func NewBerlekampWelchTest(t testing.TB,
 
 	asserter := Wrap(t)
 
-	code, err := NewFecCode(required, total)
+	code, err := NewFEC(required, total)
 	asserter.AssertNoError(err)
 
 	return &BerlekampWelchTest{
@@ -192,15 +208,16 @@ func NewBerlekampWelchTest(t testing.TB,
 	}
 }
 
-func (t *BerlekampWelchTest) StoreShares() ([]Share, Callback) {
+func (t *BerlekampWelchTest) StoreShares() ([]Share, func(Share)) {
 	out := make([]Share, t.code.n)
-	return out, func(idx, total int, data []byte) {
+	return out, func(s Share) {
+		idx := s.Number
 		out[idx].Number = idx
-		out[idx].Data = append(out[idx].Data, data...)
+		out[idx].Data = append(out[idx].Data, s.Data...)
 	}
 }
 
-func (t *BerlekampWelchTest) SomeShares(block int) []Share {
+func (t *BerlekampWelchTest) SomeShares(block int) ([]byte, []Share) {
 	// seed the initial data
 	data := make([]byte, t.code.k*block)
 	for i := range data {
@@ -209,7 +226,7 @@ func (t *BerlekampWelchTest) SomeShares(block int) []Share {
 
 	shares, store := t.StoreShares()
 	t.AssertNoError(t.code.Encode(data, store))
-	return shares
+	return data, shares
 }
 
 func (t *BerlekampWelchTest) CopyShares(shares []Share) []Share {

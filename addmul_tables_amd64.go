@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (C) 2016 Space Monkey, Inc.
+// Copyright (C) 2016-2017 Vivint, Inc.
 // Copyright (c) 2015 Klaus Post
 // Copyright (c) 2015 Backblaze
 //

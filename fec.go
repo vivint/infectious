@@ -1,7 +1,7 @@
 // (C) 1996-1998 Luigi Rizzo (luigi@iet.unipi.it)
 //     2009-2010 Jack Lloyd (lloyd@randombit.net)
 //     2011 Billy Brumley (billy.brumley@aalto.fi)
-//     2016 Space Monkey (hello@spacemonkey.com)
+//     2016-2017 Vivint, Inc. (jeff.wendling@vivint.com)
 //
 // Portions derived from code by Phil Karn (karn@ka9q.ampr.org),
 // Robert Morelos-Zaragoza (robert@spectra.eng.hawaii.edu) and Hari
@@ -35,14 +35,20 @@ package infectious
 
 import "sort"
 
-type FecCode struct {
+// FEC represents operations performed on a Reed-Solomon-based
+// forward error correction code. Make sure to construct using NewFEC.
+type FEC struct {
 	k           int
 	n           int
 	enc_matrix  []byte
 	vand_matrix []byte
 }
 
-func NewFecCode(k, n int) (*FecCode, error) {
+// NewFEC creates a *FEC using k required pieces and n total pieces.
+// Encoding data with this *FEC will generate n pieces, and decoding
+// data requires k uncorrupted pieces. If during decode more than k pieces
+// exist, corrupted data can be detected and recovered from.
+func NewFEC(k, n int) (*FEC, error) {
 	if k <= 0 || n <= 0 || k > 256 || n > 256 || k > n {
 		return nil, Error.New("requires 1 <= k <= n <= 256")
 	}
@@ -85,7 +91,7 @@ func NewFecCode(k, n int) (*FecCode, error) {
 		g = gf_mul_table[2][g]
 	}
 
-	return &FecCode{
+	return &FEC{
 		k:           k,
 		n:           n,
 		enc_matrix:  enc_matrix,
@@ -93,17 +99,27 @@ func NewFecCode(k, n int) (*FecCode, error) {
 	}, nil
 }
 
-func (f *FecCode) Required() int {
+// Required returns the number of required pieces for reconstruction. This is
+// the k value passed to NewFEC.
+func (f *FEC) Required() int {
 	return f.k
 }
 
-func (f *FecCode) Total() int {
+// Total returns the number of total pieces that will be generated during
+// encoding. This is the n value passed to NewFEC.
+func (f *FEC) Total() int {
 	return f.n
 }
 
-type Callback func(i int, n int, data []byte)
-
-func (f *FecCode) Encode(input []byte, output Callback) error {
+// Encode will take input data and encode to the total number of pieces n this
+// *FEC is configured for. It will call the callback output n times.
+//
+// The input data must be a multiple of the required number of pieces k.
+// Padding to this multiple is up to the caller.
+//
+// Note that the byte slices in Shares passed to output may be reused when
+// output returns.
+func (f *FEC) Encode(input []byte, output func(Share)) error {
 	size := len(input)
 
 	k := f.k
@@ -117,7 +133,9 @@ func (f *FecCode) Encode(input []byte, output Callback) error {
 	block_size := size / k
 
 	for i := 0; i < k; i++ {
-		output(i, n, input[i*block_size:i*block_size+block_size])
+		output(Share{
+			Number: i,
+			Data:   input[i*block_size : i*block_size+block_size]})
 	}
 
 	fec_buf := make([]byte, block_size)
@@ -131,11 +149,15 @@ func (f *FecCode) Encode(input []byte, output Callback) error {
 				enc_matrix[i*k+j])
 		}
 
-		output(i, n, fec_buf)
+		output(Share{
+			Number: i,
+			Data:   fec_buf})
 	}
 	return nil
 }
 
+// A Share represents a piece of the FEC-encoded data.
+// Both fields are required.
 type Share struct {
 	Number int
 	Data   []byte
@@ -147,7 +169,19 @@ func (b byNumber) Len() int               { return len(b) }
 func (b byNumber) Less(i int, j int) bool { return b[i].Number < b[j].Number }
 func (b byNumber) Swap(i int, j int)      { b[i], b[j] = b[j], b[i] }
 
-func (f *FecCode) Decode(shares []Share, output Callback) error {
+// Rebuild will take a list of corrected shares (pieces) and a callback output.
+// output will be called k times ((*FEC).Required() times) with 1/k of the
+// original data each time and the index of that data piece.
+// Decode is usually preferred.
+//
+// Note that the data is not necessarily sent to output ordered by the piece
+// number.
+//
+// Note that the byte slices in Shares passed to output may be reused when
+// output returns.
+//
+// Rebuild assumes that you have already called Correct or did not need to.
+func (f *FEC) Rebuild(shares []Share, output func(Share)) error {
 	k := f.k
 	n := f.n
 	enc_matrix := f.enc_matrix
@@ -188,7 +222,9 @@ func (f *FecCode) Decode(shares []Share, output Callback) error {
 		if share_id < k {
 			m_dec[i*(k+1)] = 1
 			if output != nil {
-				output(share_id, k, share_data)
+				output(Share{
+					Number: share_id,
+					Data:   share_data})
 			}
 		} else {
 			copy(m_dec[i*k:i*k+k], enc_matrix[share_id*k:])
@@ -214,7 +250,9 @@ func (f *FecCode) Decode(shares []Share, output Callback) error {
 			}
 
 			if output != nil {
-				output(i, k, buf)
+				output(Share{
+					Number: i,
+					Data:   buf})
 			}
 		}
 	}

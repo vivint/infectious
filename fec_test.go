@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (C) 2016 Space Monkey, Inc.
+// Copyright (C) 2016-2017 Vivint, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@ func TestBasicOperation(t *testing.T) {
 	const block = 1024 * 1024
 	const total, required = 40, 20
 
-	code, err := NewFecCode(required, total)
+	code, err := NewFEC(required, total)
 	if err != nil {
 		t.Fatalf("failed to create new fec code: %s", err)
 	}
@@ -45,8 +45,8 @@ func TestBasicOperation(t *testing.T) {
 
 	// encode it and store to outputs
 	var outputs = make(map[int][]byte)
-	store := func(idx, total int, data []byte) {
-		outputs[idx] = append([]byte(nil), data...)
+	store := func(s Share) {
+		outputs[s.Number] = append([]byte(nil), s.Data...)
 	}
 	err = code.Encode(data[:], store)
 	if err != nil {
@@ -61,10 +61,10 @@ func TestBasicOperation(t *testing.T) {
 	}
 
 	got := make([]byte, required*block)
-	record := func(idx, total int, data []byte) {
-		copy(got[idx*block:], data)
+	record := func(s Share) {
+		copy(got[s.Number*block:], s.Data)
 	}
-	err = code.Decode(shares[:], record)
+	err = code.Rebuild(shares[:], record)
 	if err != nil {
 		t.Fatalf("decode failed: %s", err)
 	}
@@ -78,7 +78,7 @@ func BenchmarkEncode(b *testing.B) {
 	const block = 1024 * 1024
 	const total, required = 40, 20
 
-	code, err := NewFecCode(required, total)
+	code, err := NewFEC(required, total)
 	if err != nil {
 		b.Fatalf("failed to create new fec code: %s", err)
 	}
@@ -88,7 +88,7 @@ func BenchmarkEncode(b *testing.B) {
 	for i := range data {
 		data[i] = byte(i)
 	}
-	store := func(idx, total int, data []byte) {}
+	store := func(Share) {}
 
 	b.SetBytes(block * required)
 	b.ReportAllocs()
@@ -99,11 +99,11 @@ func BenchmarkEncode(b *testing.B) {
 	}
 }
 
-func BenchmarkDecode(b *testing.B) {
+func BenchmarkRebuild(b *testing.B) {
 	const block = 4096
 	const total, required = 40, 20
 
-	code, err := NewFecCode(required, total)
+	code, err := NewFEC(required, total)
 	if err != nil {
 		b.Fatalf("failed to create new fec code: %s", err)
 	}
@@ -114,9 +114,10 @@ func BenchmarkDecode(b *testing.B) {
 		data[i] = byte(i)
 	}
 	shares := make([]Share, total)
-	store := func(idx, total int, data []byte) {
+	store := func(s Share) {
+		idx := s.Number
 		shares[idx].Number = idx
-		shares[idx].Data = append(shares[idx].Data, data...)
+		shares[idx].Data = append(shares[idx].Data, s.Data...)
 	}
 	err = code.Encode(data, store)
 	if err != nil {
@@ -130,6 +131,6 @@ func BenchmarkDecode(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		code.Decode(dec_shares, nil)
+		code.Rebuild(dec_shares, nil)
 	}
 }

@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (C) 2016 Space Monkey, Inc.
+// Copyright (C) 2016-2017 Vivint, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,57 @@ import (
 	"github.com/spacemonkeygo/errors"
 )
 
-func (fc *FecCode) BerlekampWelch(shares []Share, output Callback) error {
+// Decode will take a destination buffer (can be nil) and a list of shares
+// (pieces). It will return the data passed in to the corresponding Encode
+// call or return an error.
+//
+// It will first correct the shares using Correct, mutating and reordering the
+// passed-in shares arguments. Then it will rebuild the data using Rebuild.
+// Finally it will concatenate the data into the given output buffer dst if it
+// has capacity, growing it otherwise.
+//
+// If you already know your data does not contain errors, Rebuild will be
+// faster.
+//
+// If you only want to identify which pieces are bad, you may be interested in
+// Correct.
+//
+// If you don't want the data concatenated for you, you can use Correct and
+// then Rebuild individually.
+func (f *FEC) Decode(dst []byte, shares []Share) ([]byte, error) {
+	err := f.Correct(shares)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(shares) == 0 {
+		return nil, errors.ProgrammerError.New("must specify at least one share")
+	}
+	piece_len := len(shares[0].Data)
+	result_len := piece_len * f.k
+	if cap(dst) < result_len {
+		dst = make([]byte, result_len)
+	} else {
+		dst = dst[:result_len]
+	}
+
+	return dst, f.Rebuild(shares, func(s Share) {
+		copy(dst[s.Number*piece_len:], s.Data)
+	})
+}
+
+func (f *FEC) decode(shares []Share, output func(Share)) error {
+	err := f.Correct(shares)
+	if err != nil {
+		return err
+	}
+	return f.Rebuild(shares, output)
+}
+
+// Correct implements the Berlekamp-Welch algorithm for correcting
+// errors in given FEC encoded data. It will correct the supplied shares,
+// mutating the underlying byte slices and reordering the shares
+func (fc *FEC) Correct(shares []Share) error {
 	if len(shares) == 0 {
 		return errors.ProgrammerError.New("must specify at least one share")
 	}
@@ -66,10 +116,10 @@ func (fc *FecCode) BerlekampWelch(shares []Share, output Callback) error {
 		}
 	}
 
-	return fc.Decode(shares, output)
+	return nil
 }
 
-func (fc *FecCode) berlekampWelch(shares []Share, index int) ([]byte, error) {
+func (fc *FEC) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	k := fc.k        // required size
 	r := len(shares) // required + redundancy size
 	e := (r - k) / 2 // deg of E polynomial
@@ -161,7 +211,7 @@ func (fc *FecCode) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	return out, nil
 }
 
-func (fc *FecCode) syndromeMatrix(shares []Share) (gfMat, error) {
+func (fc *FEC) syndromeMatrix(shares []Share) (gfMat, error) {
 	// get a list of keepers
 	keepers := map[int]struct{}{}
 	for _, share := range shares {

@@ -2,19 +2,20 @@
 // Copyright notices
 /////////////////
 
-Copyright (C) 2016 Space Monkey, Inc.
+Copyright (C) 2016-2017 Vivint, Inc.
 Copyright (c) 2015 Klaus Post
 Copyright (c) 2015 Backblaze
-Copyright (C) 1996-1998 Luigi Rizzo (luigi@iet.unipi.it)
-Copyright (C) 2009-2010 Jack Lloyd (lloyd@randombit.net)
 Copyright (C) 2011 Billy Brumley (billy.brumley@aalto.fi)
+Copyright (C) 2009-2010 Jack Lloyd (lloyd@randombit.net)
+Copyright (C) 1996-1998 Luigi Rizzo (luigi@iet.unipi.it)
 
 Portions derived from code by Phil Karn (karn@ka9q.ampr.org),
 Robert Morelos-Zaragoza (robert@spectra.eng.hawaii.edu) and Hari
 Thirumoorthy (harit@spectra.eng.hawaii.edu), Aug 1995
 
 /////////////////
-// Portions of this project are licensed under this license
+// Portions of this project (labeled in each file) are licensed under this
+// license:
 /////////////////
 
 Redistribution and use in source and binary forms, with or without
@@ -42,7 +43,7 @@ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 /////////////////
-// All other portions of this project are licensed under this license
+// All other portions of this project are licensed under this license:
 /////////////////
 
 The MIT License (MIT)
