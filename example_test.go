@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/vivintinc/infectious"
+	"github.com/vivint/infectious"
 )
 
 func Example(t *testing.T) {

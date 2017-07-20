@@ -1,6 +1,6 @@
 # infectious
 
-[![GoDoc](https://godoc.org/github.com/vivintinc/infectious?status.png)](https://godoc.org/github.com/vivintinc/infectious)
+[![GoDoc](https://godoc.org/github.com/vivint/infectious?status.png)](https://godoc.org/github.com/vivint/infectious)
 
 Infectious implements
 [Reed-Solomon forward error correction](https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction).
@@ -60,7 +60,7 @@ fmt.Printf("got: %#v\n", string(result))
 performance at the expense of having some really sharp edges! Read the
 documentation about memory lifecycles carefully!
 
-Please see the docs at http://godoc.org/github.com/vivintinc/infectious
+Please see the docs at http://godoc.org/github.com/vivint/infectious
 
 ### LICENSE
 
