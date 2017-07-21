@@ -61,6 +61,13 @@ documentation about memory lifecycles carefully!
 
 Please see the docs at http://godoc.org/github.com/vivint/infectious
 
+### Thanks
+
+We're forever indebted to the giants on whose shoulders we stand. The LICENSE 
+has our full copyright history, but an extra special thanks to Klaus Post for 
+much of the initial Go code. See his post for more: 
+http://blog.klauspost.com/blazingly-fast-reed-solomon-coding/
+
 ### LICENSE
 
  * Copyright (C) 2016-2017 Vivint, Inc.
