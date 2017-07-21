@@ -26,9 +26,8 @@ if err != nil {
 // Prepare to receive the shares of encoded data.
 shares := make([]infectious.Share, total)
 output := func(s infectious.Share) {
-	shares[s.Number].Number = s.Number
-	// we need to make a copy of s.Data!
-	shares[s.Number].Data = append([]byte(nil), s.Data...)
+	// the memory in s gets reused, so we need to make a deep copy
+	shares[s.Number] = s.DeepCopy()
 }
 
 // the data to encode must be padded to a multiple of required, hence the

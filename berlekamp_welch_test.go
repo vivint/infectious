@@ -232,8 +232,7 @@ func (t *BerlekampWelchTest) SomeShares(block int) ([]byte, []Share) {
 func (t *BerlekampWelchTest) CopyShares(shares []Share) []Share {
 	out := make([]Share, t.code.n)
 	for i, share := range shares {
-		out[i].Number = share.Number
-		out[i].Data = append([]byte(nil), share.Data...)
+		out[i] = share.DeepCopy()
 	}
 	return out
 }

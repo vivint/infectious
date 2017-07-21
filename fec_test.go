@@ -46,7 +46,7 @@ func TestBasicOperation(t *testing.T) {
 	// encode it and store to outputs
 	var outputs = make(map[int][]byte)
 	store := func(s Share) {
-		outputs[s.Number] = append([]byte(nil), s.Data...)
+		outputs[s.Number] = s.DeepCopy().Data
 	}
 	err = code.Encode(data[:], store)
 	if err != nil {

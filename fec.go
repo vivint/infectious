@@ -163,6 +163,14 @@ type Share struct {
 	Data   []byte
 }
 
+// DeepCopy makes getting a deep copy of a Share easier. It will return an
+// identical Share that uses all new memory locations.
+func (s *Share) DeepCopy() (c Share) {
+	c.Number = s.Number
+	c.Data = append([]byte(nil), s.Data...)
+	return c
+}
+
 type byNumber []Share
 
 func (b byNumber) Len() int               { return len(b) }
