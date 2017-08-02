@@ -28,6 +28,9 @@
 // performance at the expense of having some really sharp edges! Read the
 // documentation about memory lifecycles carefully!
 //
+// We wrote a blog post about how this library works!
+// https://innovation.vivint.com/introduction-to-reed-solomon-bc264d0794f8
+//
 //   [1] https://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction
 //   [2] https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm
 package infectious
