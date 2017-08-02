@@ -8,6 +8,8 @@ It uses the
 [Berlekamp-Welch error correction algorithm](https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm)
 to achieve the ability to actually correct errors.
 
+[We wrote a blog post about how this library works!](https://innovation.vivint.com/introduction-to-reed-solomon-bc264d0794f8)
+
 ### Example
 
 ```golang
