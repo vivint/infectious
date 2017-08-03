@@ -51,9 +51,6 @@ func (f *FEC) Decode(dst []byte, shares []Share) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(shares) == 0 {
-		return nil, errors.ProgrammerError.New("must specify at least one share")
-	}
 	piece_len := len(shares[0].Data)
 	result_len := piece_len * f.k
 	if cap(dst) < result_len {
