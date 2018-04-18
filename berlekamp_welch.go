@@ -79,8 +79,8 @@ func (f *FEC) decode(shares []Share, output func(Share)) error {
 // errors in given FEC encoded data. It will correct the supplied shares,
 // mutating the underlying byte slices and reordering the shares
 func (fc *FEC) Correct(shares []Share) error {
-	if len(shares) == 0 {
-		return errors.ProgrammerError.New("must specify at least one share")
+	if len(shares) < fc.k {
+		return errors.ProgrammerError.New("must specify at least the number of required shares")
 	}
 
 	sort.Sort(byNumber(shares))
@@ -125,7 +125,7 @@ func (fc *FEC) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	e := (r - k) / 2 // deg of E polynomial
 	q := e + k       // def of Q polynomial
 
-	if e == 0 {
+	if e <= 0 {
 		return nil, Error.New("not enough shares")
 	}
 
