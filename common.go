@@ -38,3 +38,5 @@ package infectious
 import "github.com/spacemonkeygo/errors"
 
 var Error = errors.NewClass("infectious")
+var NotEnoughShares = Error.NewClass("not enough shares")
+var TooManyErrors = Error.NewClass("too many errors")
