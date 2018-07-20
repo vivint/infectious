@@ -26,8 +26,6 @@ import (
 	"fmt"
 	"strings"
 	"unsafe"
-
-	"github.com/spacemonkeygo/errors"
 )
 
 //
@@ -55,7 +53,7 @@ func (a gfVal) mul(b gfVal) gfVal {
 
 func (a gfVal) div(b gfVal) (gfVal, error) {
 	if b == 0 {
-		return 0, errors.ProgrammerError.New("divide by zero")
+		return 0, Error.New("divide by zero")
 	}
 	if a == 0 {
 		return 0, nil
@@ -73,7 +71,7 @@ func (a gfVal) isZero() bool {
 
 func (a gfVal) inv() (gfVal, error) {
 	if a == 0 {
-		return 0, errors.ProgrammerError.New("invert zero")
+		return 0, Error.New("invert zero")
 	}
 	return gfVal(gf_exp[255-gf_log[a]]), nil
 }
@@ -175,7 +173,7 @@ func (p gfPoly) div(b gfPoly) (q, r gfPoly, err error) {
 		b = b[1:]
 	}
 	if len(b) == 0 {
-		return nil, nil, errors.ProgrammerError.New("divide by zero")
+		return nil, nil, Error.New("divide by zero")
 	}
 
 	// sanitize the base poly as well
@@ -223,7 +221,7 @@ func (p gfPoly) div(b gfPoly) (q, r gfPoly, err error) {
 
 		p = p.add(padded)
 		if !p[0].isZero() {
-			return nil, nil, errors.ProgrammerError.New("alg error: %x", p)
+			return nil, nil, Error.New("alg error: %x", p)
 		}
 		p = p[1:]
 	}
