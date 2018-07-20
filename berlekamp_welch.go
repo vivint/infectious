@@ -24,8 +24,6 @@ package infectious
 
 import (
 	"sort"
-
-	"github.com/spacemonkeygo/errors"
 )
 
 // Decode will take a destination buffer (can be nil) and a list of shares
@@ -52,7 +50,7 @@ func (f *FEC) Decode(dst []byte, shares []Share) ([]byte, error) {
 	}
 
 	if len(shares) == 0 {
-		return nil, errors.ProgrammerError.New("must specify at least one share")
+		return nil, Error.New("must specify at least one share")
 	}
 	piece_len := len(shares[0].Data)
 	result_len := piece_len * f.k
@@ -80,7 +78,7 @@ func (f *FEC) decode(shares []Share, output func(Share)) error {
 // mutating the underlying byte slices and reordering the shares
 func (fc *FEC) Correct(shares []Share) error {
 	if len(shares) < fc.k {
-		return errors.ProgrammerError.New("must specify at least the number of required shares")
+		return Error.New("must specify at least the number of required shares")
 	}
 
 	sort.Sort(byNumber(shares))
