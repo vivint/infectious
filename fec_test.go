@@ -174,6 +174,7 @@ func BenchmarkMultiple(b *testing.B) {
 			fec, _ := NewFEC(conf.required, conf.total)
 
 			b.Run("Encode/"+confname+testname, func(b *testing.B) {
+				b.ReportAllocs()
 				b.SetBytes(int64(dataSize))
 				for i := 0; i < b.N; i++ {
 					err := fec.Encode(data[:dataSize], func(share Share) {})
@@ -192,6 +193,7 @@ func BenchmarkMultiple(b *testing.B) {
 			}
 
 			b.Run("Decode/"+confname+testname, func(b *testing.B) {
+				b.ReportAllocs()
 				b.SetBytes(int64(dataSize))
 				for i := 0; i < b.N; i++ {
 					rand.Shuffle(len(shares), func(i, k int) {
