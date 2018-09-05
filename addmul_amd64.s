@@ -22,18 +22,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// func addmulSSE3(low, high, in, out []byte)
+// func addmulSSE3(lowhigh *[2][16]byte, in, out []byte)
 TEXT ·addmulSSE3(SB), 7, $0
-	MOVQ   low+0(FP), SI     // SI: &low
-	MOVQ   high+24(FP), DX   // DX: &high
-	MOVOU  (SI), X6          // X6 low
-	MOVOU  (DX), X7          // X7: high
-	MOVQ   $15, BX           // BX: low mask
+	MOVQ   lowhigh+0(FP), SI  // SI: lowhigh
+	MOVOU  (SI),    X6        // X6: low
+	MOVOU  16(SI),  X7        // X7: high
+	MOVQ   $15, BX            // BX: low mask
 	MOVQ   BX, X8
 	PXOR   X5, X5
-	MOVQ   in+48(FP), SI     // R11: &in
-	MOVQ   in_len+56(FP), R9 // R9: len(in)
-	MOVQ   out+72(FP), DX    // DX: &out
+	MOVQ   in+8(FP), SI     // R11: &in
+	MOVQ   in_len+16(FP), R9 // R9: len(in)
+	MOVQ   out+32(FP), DX    // DX: &out
 	PSHUFB X5, X8            // X8: lomask (unpacked)
 	SHRQ   $4, R9            // len(in) / 16
 	CMPQ   R9, $0
@@ -61,23 +60,24 @@ loopback_xor:
 done_xor:
 	RET
 
-// func addmulAVX2(low, high, in, out []byte)
+// func addmulAVX2(lowhigh *[2][16]byte, in, out []byte)
 TEXT ·addmulAVX2(SB), 7, $0
-	MOVQ  low+0(FP), SI     // SI: &low
-	MOVQ  high+24(FP), DX   // DX: &high
+	MOVQ  low+0(FP), SI     // SI: &lowhigh
+	MOVOU (SI),   X6        // X6: low
+	MOVOU 16(SI), X7        // X7: high
+	
 	MOVQ  $15, BX           // BX: low mask
 	MOVQ  BX, X5
-	MOVOU (SI), X6          // X6 low
-	MOVOU (DX), X7          // X7: high
-	MOVQ  in_len+56(FP), R9 // R9: len(in)
+		
+	MOVQ  in_len+16(FP), R9 // R9: len(in)
 
 	LONG $0x384de3c4; WORD $0x01f6 // VINSERTI128 YMM6, YMM6, XMM6, 1 ; low
 	LONG $0x3845e3c4; WORD $0x01ff // VINSERTI128 YMM7, YMM7, XMM7, 1 ; high
 	LONG $0x787d62c4; BYTE $0xc5   // VPBROADCASTB YMM8, XMM5         ; X8: lomask (unpacked)
 
 	SHRQ  $5, R9         // len(in) /32
-	MOVQ  out+72(FP), DX // DX: &out
-	MOVQ  in+48(FP), SI  // R11: &in
+	MOVQ  out+32(FP), DX // DX: &out
+	MOVQ  in+8(FP), SI   // R11: &in
 	TESTQ R9, R9
 	JZ    done_xor_avx2
 
