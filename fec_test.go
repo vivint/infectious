@@ -24,6 +24,7 @@ package infectious
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
 	"testing"
 )
@@ -132,5 +133,77 @@ func BenchmarkRebuild(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		code.Rebuild(dec_shares, nil)
+	}
+}
+
+func BenchmarkMultiple(b *testing.B) {
+	b.ReportAllocs()
+	data := make([]byte, 8<<20)
+	output := make([]byte, 8<<20)
+
+	confs := []struct{ required, total int }{
+		{2, 4},
+		{20, 50},
+		{30, 60},
+		{50, 80},
+	}
+
+	dataSizes := []int{
+		64,
+		128,
+		256,
+		512,
+		1 << 10,
+		256 << 10,
+		1 << 20,
+		5 << 20,
+		8 << 20,
+	}
+
+	for _, conf := range confs {
+		confname := fmt.Sprintf("r%dt%d/", conf.required, conf.total)
+		for _, tryDataSize := range dataSizes {
+			dataSize := (tryDataSize / conf.required) * conf.required
+			testname := fmt.Sprintf("%.3fKB", float64(dataSize)/1024.0)
+			fec, _ := NewFEC(conf.required, conf.total)
+
+			b.Run("Encode/"+confname+testname, func(b *testing.B) {
+				b.SetBytes(int64(dataSize))
+				for i := 0; i < b.N; i++ {
+					err := fec.Encode(data[:dataSize], func(share Share) {})
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+
+			shares := []Share{}
+			err := fec.Encode(data[:dataSize], func(share Share) {
+				shares = append(shares, share.DeepCopy())
+			})
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.Run("Decode/"+confname+testname, func(b *testing.B) {
+				b.SetBytes(int64(dataSize))
+				for i := 0; i < b.N; i++ {
+					rand.Shuffle(len(shares), func(i, k int) {
+						shares[i], shares[k] = shares[k], shares[i]
+					})
+
+					offset := i % (conf.total / 4)
+					n := conf.required + 1 + offset
+					if n > conf.total {
+						n = conf.total
+					}
+
+					_, err = fec.Decode(output[:dataSize], shares[:n])
+					if err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+		}
 	}
 }
