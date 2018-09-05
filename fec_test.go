@@ -26,6 +26,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"testing"
 )
 
@@ -164,7 +165,12 @@ func BenchmarkMultiple(b *testing.B) {
 		confname := fmt.Sprintf("r%dt%d/", conf.required, conf.total)
 		for _, tryDataSize := range dataSizes {
 			dataSize := (tryDataSize / conf.required) * conf.required
-			testname := fmt.Sprintf("%.3fKB", float64(dataSize)/1024.0)
+			var testname string
+			if dataSize < 1024 {
+				testname = strconv.Itoa(dataSize) + "B"
+			} else {
+				testname = strconv.Itoa(dataSize/1024) + "KB"
+			}
 			fec, _ := NewFEC(conf.required, conf.total)
 
 			b.Run("Encode/"+confname+testname, func(b *testing.B) {
