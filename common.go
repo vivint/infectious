@@ -45,4 +45,4 @@ var NotEnoughShares = Error.NewClass("not enough shares")
 var TooManyErrors = Error.NewClass("too many errors")
 
 var hasAVX2 = cpu.X86.HasAVX2
-var hasSSE3 = cpu.X86.HasSSE3
+var hasSSSE3 = cpu.X86.HasSSSE3

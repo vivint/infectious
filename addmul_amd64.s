@@ -22,25 +22,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// func addmulSSE3(lowhigh *[2][16]byte, in, out []byte)
-TEXT ·addmulSSE3(SB), 7, $0
+// func addmulSSSE3(lowhigh *[2][16]byte, in, out *byte, len int)
+TEXT ·addmulSSSE3(SB), 7, $0
 	MOVQ   lowhigh+0(FP), SI  // SI: lowhigh
 	MOVOU  (SI),    X6        // X6: low
 	MOVOU  16(SI),  X7        // X7: high
+	
 	MOVQ   $15, BX            // BX: low mask
-	MOVQ   BX, X8
+	MOVQ   BX,  X8
 	PXOR   X5, X5
-	MOVQ   in+8(FP), SI     // R11: &in
-	MOVQ   in_len+16(FP), R9 // R9: len(in)
-	MOVQ   out+32(FP), DX    // DX: &out
-	PSHUFB X5, X8            // X8: lomask (unpacked)
-	SHRQ   $4, R9            // len(in) / 16
+
+	MOVQ   in+8(FP),   SI     // R11: &in
+	MOVQ   len+24(FP),   R9   // R9: len(in), len(out)
+	MOVQ   out+16(FP), DX     // DX: &out
+	
+	PSHUFB X5, X8             // X8: lomask (unpacked)
+
+	SHRQ   $4, R9             // len(in) / 16
 	CMPQ   R9, $0
 	JEQ    done_xor
 
 loopback_xor:
 	MOVOU  (SI), X0     // in[x]
 	MOVOU  (DX), X4     // out[x]
+	
 	MOVOU  X0, X1       // in[x]
 	MOVOU  X6, X2       // low copy
 	MOVOU  X7, X3       // high copy
@@ -51,7 +56,9 @@ loopback_xor:
 	PSHUFB X1, X3       // X3: mul high part
 	PXOR   X2, X3       // X3: Result
 	PXOR   X4, X3       // X3: Result xor existing out
+	
 	MOVOU  X3, (DX)     // Store
+	
 	ADDQ   $16, SI      // in+=16
 	ADDQ   $16, DX      // out+=16
 	SUBQ   $1, R9
@@ -60,7 +67,7 @@ loopback_xor:
 done_xor:
 	RET
 
-// func addmulAVX2(lowhigh *[2][16]byte, in, out []byte)
+// func addmulAVX2(lowhigh *[2][16]byte, in, out *byte, len int)
 TEXT ·addmulAVX2(SB), 7, $0
 	MOVQ  low+0(FP), SI     // SI: &lowhigh
 	MOVOU (SI),   X6        // X6: low
@@ -69,14 +76,14 @@ TEXT ·addmulAVX2(SB), 7, $0
 	MOVQ  $15, BX           // BX: low mask
 	MOVQ  BX, X5
 		
-	MOVQ  in_len+16(FP), R9 // R9: len(in)
+	MOVQ  len+24(FP), R9 // R9: len(in), len(out)
 
 	LONG $0x384de3c4; WORD $0x01f6 // VINSERTI128 YMM6, YMM6, XMM6, 1 ; low
 	LONG $0x3845e3c4; WORD $0x01ff // VINSERTI128 YMM7, YMM7, XMM7, 1 ; high
 	LONG $0x787d62c4; BYTE $0xc5   // VPBROADCASTB YMM8, XMM5         ; X8: lomask (unpacked)
 
-	SHRQ  $5, R9         // len(in) /32
-	MOVQ  out+32(FP), DX // DX: &out
+	SHRQ  $5, R9         // len(in) / 32
+	MOVQ  out+16(FP), DX // DX: &out
 	MOVQ  in+8(FP), SI   // R11: &in
 	TESTQ R9, R9
 	JZ    done_xor_avx2
