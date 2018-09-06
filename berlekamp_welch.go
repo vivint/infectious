@@ -211,18 +211,22 @@ func (fc *FEC) berlekampWelch(shares []Share, index int) ([]byte, error) {
 
 func (fc *FEC) syndromeMatrix(shares []Share) (gfMat, error) {
 	// get a list of keepers
-	keepers := map[int]struct{}{}
+	keepers := make([]bool, fc.n)
+	shareCount := 0
 	for _, share := range shares {
-		keepers[share.Number] = struct{}{}
+		if !keepers[share.Number] {
+			keepers[share.Number] = true
+			shareCount++
+		}
 	}
 
 	// create a vandermonde matrix but skip columns where we're missing the
 	// share.
-	out := matrixNew(fc.k, len(keepers))
+	out := matrixNew(fc.k, shareCount)
 	for i := 0; i < fc.k; i++ {
 		skipped := 0
 		for j := 0; j < fc.n; j++ {
-			if _, ok := keepers[j]; !ok {
+			if !keepers[j] {
 				skipped++
 				continue
 			}

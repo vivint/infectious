@@ -35,8 +35,14 @@
 //   [2] https://en.wikipedia.org/wiki/Berlekamp%E2%80%93Welch_algorithm
 package infectious
 
-import "github.com/spacemonkeygo/errors"
+import (
+	"github.com/spacemonkeygo/errors"
+	"golang.org/x/sys/cpu"
+)
 
 var Error = errors.NewClass("infectious")
 var NotEnoughShares = Error.NewClass("not enough shares")
 var TooManyErrors = Error.NewClass("too many errors")
+
+var hasAVX2 = cpu.X86.HasAVX2
+var hasSSSE3 = cpu.X86.HasSSSE3
