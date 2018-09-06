@@ -22,6 +22,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/*
+The corresponding C implementations:
+
+void addmul(
+	uint8_t * restrict lowhigh,
+	uint8_t * restrict in,
+	uint8_t * restrict out,
+	int n
+) {
+	for(int i = 0; i < n; i++){
+		int value = in[i];
+		int low   = value & 15;
+		int high  = value >> 4;
+		out[i] = out[i] ^ lowhigh[low] ^ lowhigh[high+16];
+	}
+}
+
+void addmulSSSE3(
+	uint8_t * restrict lowhigh,
+	uint8_t * restrict in,
+	uint8_t * restrict out,
+	int n
+) {
+	int i = 0;
+
+	__m128i lotbl = _mm_loadu_si128((__m128i*)(&lowhigh[0]));
+	__m128i hitbl = _mm_loadu_si128((__m128i*)(&lowhigh[16]));
+
+	__m128i lomask = _mm_set1_epi8(0xF);
+
+	#pragma nounroll
+	for(i = 0; i < (n/16)*16; i += 16){
+		__m128i input8  = _mm_loadu_si128((__m128i*)(&in[i]));
+		__m128i output8 = _mm_loadu_si128((__m128i*)(&out[i]));
+
+		__m128i lo8 = _mm_and_si128(lomask, input8);
+		__m128i hi8 = _mm_and_si128(lomask, _mm_srli_si128(input8, 4)); // simulate shrli epi8
+
+		output8 = _mm_xor_si128(output8, _mm_shuffle_epi8(lotbl, lo8));
+		output8 = _mm_xor_si128(output8, _mm_shuffle_epi8(hitbl, hi8));
+
+		_mm_storeu_si128((__m128i*)(&out[i]), output8);
+	}
+}
+*/
+
 // func addmulSSSE3(lowhigh *[2][16]byte, in, out *byte, len int)
 TEXT ·addmulSSSE3(SB), 7, $0
 	MOVQ   lowhigh+0(FP), SI  // SI: lowhigh
