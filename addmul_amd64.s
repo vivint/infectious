@@ -68,50 +68,92 @@ void addmulSSSE3(
 }
 */
 
+#include "textflag.h"
+DATA  nybble_mask<>+0x00(SB)/8, $0x0F0F0F0F0F0F0F0F
+DATA  nybble_mask<>+0x08(SB)/8, $0x0F0F0F0F0F0F0F0F
+DATA  nybble_mask<>+0x10(SB)/8, $0x0F0F0F0F0F0F0F0F
+DATA  nybble_mask<>+0x18(SB)/8, $0x0F0F0F0F0F0F0F0F
+GLOBL nybble_mask<>(SB), (NOPTR+RODATA), $32
+
+#define LOWHIGH  DI
+#define LOW   X8
+#define HIGH  X9
+#define IN    SI
+#define OUT   DX
+#define INDEX AX
+
+#define LEN   CX
+#define LEN16 R8 // LEN16 = (LEN / 16) * 16
+
+#define LOMASK X7 // LOMASK = repeated 15 
+// X0-X5 temps
+
 // func addmulSSSE3(lowhigh *[2][16]byte, in, out *byte, len int)
 TEXT ·addmulSSSE3(SB), 7, $0
-	MOVQ   lowhigh+0(FP), SI  // SI: lowhigh
-	MOVOU  (SI),    X6        // X6: low
-	MOVOU  16(SI),  X7        // X7: high
-	
-	MOVQ   $15, BX            // BX: low mask
-	MOVQ   BX,  X8
-	PXOR   X5, X5
+	MOVQ _in+8(FP),   IN
+	MOVQ _out+16(FP), OUT
+	MOVQ _len+24(FP), LEN
 
-	MOVQ   in+8(FP),   SI     // R11: &in
-	MOVQ   len+24(FP),   R9   // R9: len(in), len(out)
-	MOVQ   out+16(FP), DX     // DX: &out
-	
-	PSHUFB X5, X8             // X8: lomask (unpacked)
+	MOVQ LEN,  LEN16
+	ANDQ $-16, LEN16
 
-	SHRQ   $4, R9             // len(in) / 16
-	CMPQ   R9, $0
-	JEQ    done_xor
+	JLE start_slow // if LEN16 == 0 { goto done }
+	
+	MOVQ _lohi+0(FP), LOWHIGH
+	MOVOU    (LOWHIGH), LOW
+	MOVOU  16(LOWHIGH), HIGH
+	
+	MOVOU  nybble_mask<>(SB), LOMASK
+	XORQ   INDEX, INDEX // INDEX = 0
 
-loopback_xor:
-	MOVOU  (SI), X0     // in[x]
-	MOVOU  (DX), X4     // out[x]
+loop16:
+	MOVOU  (IN)(INDEX*1),  X0 // X0 = INPUT[INDEX]
+	MOVOU  LOW,  X4            // X4 = copy(LOW)
+	MOVOU  (OUT)(INDEX*1), X2 // X2 = OUT[INDEX]
+	MOVOU  X0, X1              // X0 = input[index] & 15
+	MOVOU  HIGH, X5            // X5 = copy(HIGH)
 	
-	MOVOU  X0, X1       // in[x]
-	MOVOU  X6, X2       // low copy
-	MOVOU  X7, X3       // high copy
-	PSRLQ  $4, X1       // X1: high input
-	PAND   X8, X0       // X0: low input
-	PAND   X8, X1       // X0: high input
-	PSHUFB X0, X2       // X2: mul low part
-	PSHUFB X1, X3       // X3: mul high part
-	PXOR   X2, X3       // X3: Result
-	PXOR   X4, X3       // X3: Result xor existing out
-	
-	MOVOU  X3, (DX)     // Store
-	
-	ADDQ   $16, SI      // in+=16
-	ADDQ   $16, DX      // out+=16
-	SUBQ   $1, R9
-	JNZ    loopback_xor
+	PAND   LOMASK, X0
+	PSRLQ  $4, X1              // X1 = input[index]
+	PSHUFB X0, X4             // X4 = LOW[X0]
 
-done_xor:
+	PAND   LOMASK, X1         // X1 = input[index] >> 4
+	PSHUFB X1, X5            // X5 = HIGH[X1]
+	PXOR   X4, X2            // X2 = OUT[INDEX] ^ X4 ^ X5
+	PXOR   X5, X2
+
+	MOVOU X2, 0(OUT)(INDEX*1)
+	
+	ADDQ $16,   INDEX
+	CMPQ LEN16, INDEX // INDEX < LEN16
+	JG loop16
+
+start_slow:
+	MOVQ  _len+32(FP), LOWHIGH
+	MOVQ LEN16, INDEX
+	CMPQ LEN, INDEX
+	JLE done
+
+loop1:
+	MOVBQZX (IN)(INDEX*1),   R9  // R9  := in[index]
+	MOVBQZX (LOWHIGH)(R9*1), R10 // R10 := multiply[R9]
+	XORB R10B, (OUT)(INDEX*1)    // out[index] ^= R10
+	INCQ INDEX
+	CMPQ LEN, INDEX
+	JG loop1
+
+done:
 	RET
+
+#undef LOWHIGH
+#undef LOW
+#undef HIGH
+#undef IN
+#undef OUT
+#undef LEN
+#undef INDEX
+#undef LEN16
+#undef LOMASK
 
 // func addmulAVX2(lowhigh *[2][16]byte, in, out *byte, len int)
 TEXT ·addmulAVX2(SB), 7, $0
