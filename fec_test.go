@@ -76,6 +76,52 @@ func TestBasicOperation(t *testing.T) {
 	}
 }
 
+func TestEncodeSingle(t *testing.T) {
+	const block = 1024 * 1024
+	const total, required = 40, 20
+
+	code, err := NewFEC(required, total)
+	if err != nil {
+		t.Fatalf("failed to create new fec code: %s", err)
+	}
+
+	// seed the initial data
+	data := make([]byte, required*block)
+	for i := range data {
+		data[i] = byte(i)
+	}
+
+	// encode it and store to outputs
+	var outputs = make(map[int][]byte)
+	for i := 0; i < total; i++ {
+		outputs[i] = make([]byte, block)
+		err = code.EncodeSingle(data[:], outputs[i], i)
+		if err != nil {
+			t.Fatalf("encode failed: %s", err)
+		}
+	}
+
+	// pick required of the total shares randomly
+	var shares [required]Share
+	for i, idx := range rand.Perm(total)[:required] {
+		shares[i].Number = idx
+		shares[i].Data = outputs[idx]
+	}
+
+	got := make([]byte, required*block)
+	record := func(s Share) {
+		copy(got[s.Number*block:], s.Data)
+	}
+	err = code.Rebuild(shares[:], record)
+	if err != nil {
+		t.Fatalf("decode failed: %s", err)
+	}
+
+	if !bytes.Equal(got, data) {
+		t.Fatalf("did not match")
+	}
+}
+
 func BenchmarkEncode(b *testing.B) {
 	const block = 1024 * 1024
 	const total, required = 40, 20
@@ -98,6 +144,34 @@ func BenchmarkEncode(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		code.Encode(data, store)
+	}
+}
+
+func BenchmarkEncodeSingle(b *testing.B) {
+	const block = 1024 * 1024
+	const total, required = 40, 20
+
+	code, err := NewFEC(required, total)
+	if err != nil {
+		b.Fatalf("failed to create new fec code: %s", err)
+	}
+
+	// seed the initial data
+	data := make([]byte, required*block)
+	for i := range data {
+		data[i] = byte(i)
+	}
+
+	output := make([]byte, block)
+
+	b.SetBytes(block * required)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < total; j++ {
+			code.EncodeSingle(data, output, j)
+		}
 	}
 }
 
@@ -180,6 +254,20 @@ func BenchmarkMultiple(b *testing.B) {
 					err := fec.Encode(data[:dataSize], func(share Share) {})
 					if err != nil {
 						b.Fatal(err)
+					}
+				}
+			})
+
+			b.Run("Single/"+confname+testname, func(b *testing.B) {
+				b.ReportAllocs()
+				b.SetBytes(int64(dataSize))
+				output := make([]byte, dataSize/conf.required)
+				for i := 0; i < b.N; i++ {
+					for j := 0; j < conf.total; j++ {
+						err := fec.EncodeSingle(data[:dataSize], output, j)
+						if err != nil {
+							b.Fatal(err)
+						}
 					}
 				}
 			})

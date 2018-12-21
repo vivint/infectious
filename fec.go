@@ -156,6 +156,57 @@ func (f *FEC) Encode(input []byte, output func(Share)) error {
 	return nil
 }
 
+// EncodeSingle will take input data and encode it to output only for the num
+// piece.
+//
+// The input data must be a multiple of the required number of pieces k.
+// Padding to this multiple is up to the caller.
+//
+// The output must be exactly len(input) / k bytes.
+//
+// The num must be 0 <= num < n.
+func (f *FEC) EncodeSingle(input, output []byte, num int) error {
+	size := len(input)
+
+	k := f.k
+	n := f.n
+	enc_matrix := f.enc_matrix
+
+	if num < 0 {
+		return Error.New("num must be non-negative")
+	}
+
+	if num >= n {
+		return Error.New("num must be less than %d", n)
+	}
+
+	if size%k != 0 {
+		return Error.New("input length must be a multiple of %d", k)
+	}
+
+	block_size := size / k
+
+	if len(output) != block_size {
+		return Error.New("output length must be %d", block_size)
+	}
+
+	if num < k {
+		copy(output, input[num*block_size:])
+		return nil
+	}
+
+	for i := range output {
+		output[i] = 0
+	}
+
+	for i := 0; i < k; i++ {
+		addmul(output, input[i*block_size:i*block_size+block_size],
+			enc_matrix[num*k+i])
+	}
+
+	return nil
+}
+
 // A Share represents a piece of the FEC-encoded data.
 // Both fields are required.
 type Share struct {
