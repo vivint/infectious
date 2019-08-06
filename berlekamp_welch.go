@@ -92,6 +92,7 @@ func (fc *FEC) CorrectWithResults(shares []Share) (badShares []Share, err error)
 	}
 	buf := make([]byte, len(shares[0].Data))
 
+	badShareMap := make(map[int]bool)
 	for i := 0; i < synd.r; i++ {
 		for j := range buf {
 			buf[j] = 0
@@ -110,12 +111,27 @@ func (fc *FEC) CorrectWithResults(shares []Share) (badShares []Share, err error)
 				return nil, err
 			}
 			for _, share := range shares {
+				if share.Data[j] != data[share.Number] && !badShareMap[share.Number] {
+					badShares = append(badShares, share)
+					badShareMap[share.Number] = true
+				}
 				share.Data[j] = data[share.Number]
 			}
 		}
 	}
 
 	return badShares, nil
+}
+
+// makeCopies takes in a slice of Shares and deep copies their data to a new slice
+func makeCopies(originals []Share) (copies []Share) {
+	copies = make([]Share, 0, len(originals))
+	for _, original := range originals {
+		copies = append(copies, Share{
+			Data:   append([]byte{}, original.Data...),
+			Number: original.Number})
+	}
+	return copies
 }
 
 // Correct implements the Berlekamp-Welch algorithm for correcting
