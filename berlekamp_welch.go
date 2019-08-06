@@ -87,7 +87,7 @@ func (fc *FEC) Correct(shares []Share) error {
 // It will also return a list of shares that have been corrupted
 func (fc *FEC) CorrectWithResults(shares []Share) (badShares []Share, err error) {
 	if len(shares) < fc.k {
-		return badShares, Error.New("must specify at least the number of required shares")
+		return nil, Error.New("must specify at least the number of required shares")
 	}
 
 	sort.Sort(byNumber(shares))
