@@ -73,6 +73,51 @@ func (f *FEC) decode(shares []Share, output func(Share)) error {
 	return f.Rebuild(shares, output)
 }
 
+// CorrectWithResults implements the Berlekamp-Welch algorithm for correcting
+// errors in given FEC encoded data. It will correct the supplied shares,
+// mutating the underlying byte slices and reordering the shares
+// It will also return a list of shares that have been corrupted
+func (fc *FEC) CorrectWithResults(shares []Share) (badShares []Share, err error) {
+	if len(shares) < fc.k {
+		return badShares, Error.New("must specify at least the number of required shares")
+	}
+
+	sort.Sort(byNumber(shares))
+
+	// fast path: check to see if there are no errors by evaluating it with
+	// the syndrome matrix.
+	synd, err := fc.syndromeMatrix(shares)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, len(shares[0].Data))
+
+	for i := 0; i < synd.r; i++ {
+		for j := range buf {
+			buf[j] = 0
+		}
+
+		for j := 0; j < synd.c; j++ {
+			addmul(buf, shares[j].Data, byte(synd.get(i, j)))
+		}
+
+		for j := range buf {
+			if buf[j] == 0 {
+				continue
+			}
+			data, err := fc.berlekampWelch(shares, j)
+			if err != nil {
+				return nil, err
+			}
+			for _, share := range shares {
+				share.Data[j] = data[share.Number]
+			}
+		}
+	}
+
+	return badShares, nil
+}
+
 // Correct implements the Berlekamp-Welch algorithm for correcting
 // errors in given FEC encoded data. It will correct the supplied shares,
 // mutating the underlying byte slices and reordering the shares
