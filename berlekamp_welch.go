@@ -73,6 +73,14 @@ func (f *FEC) decode(shares []Share, output func(Share)) error {
 	return f.Rebuild(shares, output)
 }
 
+// Correct implements the Berlekamp-Welch algorithm for correcting
+// errors in given FEC encoded data. It will correct the supplied shares,
+// mutating the underlying byte slices and reordering the shares
+func (fc *FEC) Correct(shares []Share) error {
+	_, err := fc.CorrectWithResults(shares)
+	return err
+}
+
 // CorrectWithResults implements the Berlekamp-Welch algorithm for correcting
 // errors in given FEC encoded data. It will correct the supplied shares,
 // mutating the underlying byte slices and reordering the shares
@@ -132,50 +140,6 @@ func makeCopies(originals []Share) (copies []Share) {
 			Number: original.Number})
 	}
 	return copies
-}
-
-// Correct implements the Berlekamp-Welch algorithm for correcting
-// errors in given FEC encoded data. It will correct the supplied shares,
-// mutating the underlying byte slices and reordering the shares
-func (fc *FEC) Correct(shares []Share) error {
-	if len(shares) < fc.k {
-		return Error.New("must specify at least the number of required shares")
-	}
-
-	sort.Sort(byNumber(shares))
-
-	// fast path: check to see if there are no errors by evaluating it with
-	// the syndrome matrix.
-	synd, err := fc.syndromeMatrix(shares)
-	if err != nil {
-		return err
-	}
-	buf := make([]byte, len(shares[0].Data))
-
-	for i := 0; i < synd.r; i++ {
-		for j := range buf {
-			buf[j] = 0
-		}
-
-		for j := 0; j < synd.c; j++ {
-			addmul(buf, shares[j].Data, byte(synd.get(i, j)))
-		}
-
-		for j := range buf {
-			if buf[j] == 0 {
-				continue
-			}
-			data, err := fc.berlekampWelch(shares, j)
-			if err != nil {
-				return err
-			}
-			for _, share := range shares {
-				share.Data[j] = data[share.Number]
-			}
-		}
-	}
-
-	return nil
 }
 
 func (fc *FEC) berlekampWelch(shares []Share, index int) ([]byte, error) {
