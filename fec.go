@@ -250,7 +250,7 @@ func (f *FEC) Rebuild(shares []Share, output func(Share)) error {
 	enc_matrix := f.enc_matrix
 
 	if len(shares) < k {
-		return errors.New("not enough shares")
+		return NotEnoughShares
 	}
 
 	share_size := len(shares[0].Data)

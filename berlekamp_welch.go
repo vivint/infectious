@@ -125,7 +125,7 @@ func (fc *FEC) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	q := e + k       // def of Q polynomial
 
 	if e <= 0 {
-		return nil, errors.New("not enough shares")
+		return nil, NotEnoughShares
 	}
 
 	const interp_base = gfVal(2)
@@ -195,7 +195,7 @@ func (fc *FEC) berlekampWelch(shares []Share, index int) ([]byte, error) {
 	}
 
 	if !rem.isZero() {
-		return nil, errors.New("too many errors to reconstruct")
+		return nil, TooManyErrors
 	}
 
 	out := make([]byte, fc.n)

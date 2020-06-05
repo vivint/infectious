@@ -36,8 +36,15 @@
 package infectious
 
 import (
+	"errors"
+
 	"golang.org/x/sys/cpu"
 )
 
 var hasAVX2 = cpu.X86.HasAVX2
 var hasSSSE3 = cpu.X86.HasSSSE3
+
+var (
+	NotEnoughShares = errors.New("not enough shares")
+	TooManyErrors   = errors.New("too many errors to reconstruct")
+)
