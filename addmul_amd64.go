@@ -37,9 +37,11 @@ func addmul(z, x []byte, y byte) {
 
 	var done int
 	if hasAVX2 {
+		_, z[0] = x[0], z[0] // hints to race detector
 		addmulAVX2(&mul_table_pair[y], &x[0], &z[0], len(z))
 		done = (len(x) >> 5) << 5
 	} else if hasSSSE3 {
+		_, z[0] = x[0], z[0] // hints to race detector
 		addmulSSSE3(&mul_table_pair[y], &x[0], &z[0], len(z), &gf_mul_table[y][0])
 		//done = (len(x) >> 4) << 4
 		return
