@@ -25,6 +25,7 @@ package infectious
 import (
 	"bytes"
 	"math/rand"
+	"strconv"
 	"testing"
 )
 
@@ -57,5 +58,19 @@ func TestAddmul(t *testing.T) {
 			t.Logf("z2: %x", z2)
 			t.Fatal("mismatch")
 		}
+	}
+}
+
+func BenchmarkAddmul(b *testing.B) {
+	x, z := RandomBytes(1024), RandomBytes(1024)
+	for _, size := range []int{64, 128, 256, 1024} {
+		x, z := x[:size], z[:size]
+		b.Run(strconv.Itoa(size)+"B", func(b *testing.B) {
+			b.SetBytes(int64(size))
+			for i := 0; i < b.N; i++ {
+				y := byte(i * 29)
+				addmul(z, x, y)
+			}
+		})
 	}
 }

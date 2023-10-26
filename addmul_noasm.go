@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-//go:build !amd64
-// +build !amd64
+//go:build !amd64 || purego
+// +build !amd64 purego
 
 package infectious
 
