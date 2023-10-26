@@ -25,10 +25,10 @@
 package infectious
 
 //go:noescape
-func addmulSSSE3(lowhigh *pair, in, out *byte, n int, mul *byte)
+func addmulSSSE3(lowhigh *pair, in, out *byte, len int, mul *byte)
 
 //go:noescape
-func addmulAVX2(lowhigh *pair, in, out *byte, n int)
+func addmulAVX2(lowhigh *pair, in, out *byte, len int)
 
 func addmul(z, x []byte, y byte) {
 	if len(z) == 0 {

@@ -24,12 +24,11 @@ package infectious_test
 
 import (
 	"fmt"
-	"testing"
 
 	"github.com/vivint/infectious"
 )
 
-func Example(t *testing.T) {
+func Example() {
 	const (
 		required = 8
 		total    = 14
